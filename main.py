@@ -27,11 +27,21 @@ def open_list_gup():
     return list_gup
 
 
+def create_folder(folder_name):
+    """Создание папки с указанным именем"""
+    try:
+        os.makedirs(folder_name)
+        print(f"Папка {folder_name} успешно создана")
+    except FileExistsError:
+        print(f"Папка {folder_name} уже существует")
 
 
-def system_prompt(work):
-    """Промпт для ИИ"""
-    return f"Расскажите, чем занимается данная профессия на предприятии: {work}"
+def create_md_file(file_name, content=""):
+    """Создание файла с расширением .md"""
+    os.makedirs(os.path.dirname(f"{file_name}.md"), exist_ok=True)  # Создаем все необходимые папки, если их нет
+    with open(f"{file_name}.md", 'w', encoding='utf-8') as f:
+        f.write(content)
+    logger.info(f"Файл {file_name}.md создан.")
 
 
 def get_chat_completion_gigachat():
@@ -40,37 +50,38 @@ def get_chat_completion_gigachat():
     # Получаем данные из таблицы Excel
     list_gup = open_list_gup()
     for i in list_gup:
-        plot = i[0]
-        work = i[1]
+        plot = i[0] # Участок
+        work = i[1] # Профессия
         print(f"Участок: {plot}, Профессия: {work}")
 
+        create_folder(f'test/{plot}')
 
-    try:
-        # Создание экземпляра модели GigaChat
-        llm = GigaChat(
-            credentials=GIGA_CHAT,
-            scope="GIGACHAT_API_PERS",
-            model="GigaChat",
-            verify_ssl_certs=False,
-            streaming=False,
-        )
+        try:
+            # Создание экземпляра модели GigaChat
+            llm = GigaChat(
+                credentials=GIGA_CHAT,
+                scope="GIGACHAT_API_PERS",
+                model="GigaChat",
+                verify_ssl_certs=False,
+                streaming=False,
+            )
 
-        work = "Начальник участка"  # Профессия, которую мы хотим рассмотреть
+            system_prompt = f"Расскажите, чем занимается данная профессия на предприятии: Участок: {plot}, Профессия: {work}"  # Профессия, которую мы хотим рассмотреть
 
-        # Формирование сообщения для отправки в модель
-        messages = [
-            SystemMessage(content=system_prompt(work)),
-            HumanMessage(content=""),  # Здесь должно быть сообщение пользователя, но у вас оно пустое
-        ]
+            # Формирование сообщения для отправки в модель
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=""),  # Здесь должно быть сообщение пользователя, но у вас оно пустое
+            ]
 
-        response = llm.invoke(messages)  # Отправка запроса и получение ответа
+            response = llm.invoke(messages)  # Отправка запроса и получение ответа
 
-        return response.content
+            print(response.content)
+            create_md_file(f'test/{plot}/{work}', response.content)
 
-    except Exception as e:
-        logger.exception(e)
+        except Exception as e:
+            logger.exception(e)
 
 
 if __name__ == "__main__":
-    answer = get_chat_completion_gigachat()
-    print(answer)
+    get_chat_completion_gigachat()
