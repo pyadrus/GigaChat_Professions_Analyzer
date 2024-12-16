@@ -12,7 +12,7 @@ def open_list_gup(filepath):
     ws = wb.active
     list_gup = []
 
-    for row in ws.iter_rows(min_row=1, max_row=68, min_col=1, max_col=2):
+    for row in ws.iter_rows(min_row=1, max_row=69, min_col=1, max_col=2):
         list_gup.append([cell.value for cell in row])
 
     return list_gup
