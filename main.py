@@ -1,87 +1,48 @@
 import os
 from dotenv import load_dotenv
-from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_gigachat.chat_models import GigaChat
 from loguru import logger
-import openpyxl as op
+from utils.data_reader import open_list_gup
+from utils.file_operations import create_folder, create_md_file
+from utils.chat_gigachat import get_gigachat_response
 
-# Загрузка переменных окружения из файла .env
+# Загрузка переменных окружения
 load_dotenv(dotenv_path='settings/config.env')
-
-# Получение токена доступа к GigaChat из переменной окружения
 GIGA_CHAT = os.getenv('GIGA_CHAT')
-logger.info(f'GIGA_CHAT: {GIGA_CHAT}')
+
+# Настройка логирования
+logger.add("logs/app.log", format="{time} {level} {message}", level="INFO", rotation="1 MB")
 
 
-def open_list_gup():
-    """"Открытие таблицы и чтение данных с таблицы Excel"""
-    wb = op.load_workbook('file.xlsx')
-    ws = wb.active
-    list_gup = []
-
-    for row in ws.iter_rows(min_row=1, max_row=68, min_col=1, max_col=2):
-        row_data = [cell.value for cell in row]
-        list_gup.append(row_data)
-        print(row_data)
-
-    return list_gup
-
-
-def create_folder(folder_name):
-    """Создание папки с указанным именем"""
+def main():
+    """
+    Основная функция программы.
+    Получает данные из Excel, отправляет запросы в GigaChat
+    и сохраняет результаты в Markdown файлы.
+    """
+    logger.info("Запуск программы")
     try:
-        os.makedirs(folder_name)
-        print(f"Папка {folder_name} успешно создана")
-    except FileExistsError:
-        print(f"Папка {folder_name} уже существует")
+        # Получаем данные из Excel
+        list_gup = open_list_gup('file.xlsx')
 
+        # Обработка каждого участка и профессии
+        for plot, work in list_gup:
+            logger.info(f"Обработка участка: {plot}, профессии: {work}")
 
-def create_md_file(file_name, content=""):
-    """Создание файла с расширением .md"""
-    os.makedirs(os.path.dirname(f"{file_name}.md"), exist_ok=True)  # Создаем все необходимые папки, если их нет
-    with open(f"{file_name}.md", 'w', encoding='utf-8') as f:
-        f.write(content)
-    logger.info(f"Файл {file_name}.md создан.")
+            # Создаем папку для участка
+            folder_path = f'test/{plot}'
+            create_folder(folder_path)
 
+            # Формируем запрос к GigaChat
+            system_prompt = f"Расскажите, чем занимается данная профессия на предприятии: Участок: {plot}, Профессия: {work}"
+            response = get_gigachat_response(GIGA_CHAT, system_prompt)
 
-def get_chat_completion_gigachat():
-    """Получение ответа от GigaChat."""
+            # Сохраняем ответ в файл
+            file_path = f'{folder_path}/{work}'
+            create_md_file(file_path, response)
 
-    # Получаем данные из таблицы Excel
-    list_gup = open_list_gup()
-    for i in list_gup:
-        plot = i[0] # Участок
-        work = i[1] # Профессия
-        print(f"Участок: {plot}, Профессия: {work}")
-
-        create_folder(f'test/{plot}')
-
-        try:
-            # Создание экземпляра модели GigaChat
-            llm = GigaChat(
-                credentials=GIGA_CHAT,
-                scope="GIGACHAT_API_PERS",
-                model="GigaChat",
-                verify_ssl_certs=False,
-                streaming=False,
-            )
-
-            system_prompt = f"Расскажите, чем занимается данная профессия на предприятии: Участок: {plot}, Профессия: {work}"  # Профессия, которую мы хотим рассмотреть
-
-            # Формирование сообщения для отправки в модель
-            messages = [
-                SystemMessage(content=system_prompt),
-                HumanMessage(content=""),  # Здесь должно быть сообщение пользователя, но у вас оно пустое
-            ]
-
-            response = llm.invoke(messages)  # Отправка запроса и получение ответа
-
-            print(response.content)
-            create_md_file(f'test/{plot}/{work}', response.content)
-
-        except Exception as e:
-            logger.exception(e)
+    except Exception as e:
+        logger.exception(f"Ошибка в программе: {e}")
 
 
 if __name__ == "__main__":
-    get_chat_completion_gigachat()
+    main()
