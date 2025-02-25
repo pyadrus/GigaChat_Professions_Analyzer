@@ -29,7 +29,6 @@ def get_gigachat_response(token, prompt):
 
         # Отправка запроса
         response = llm.invoke(messages)
-        logger.info("Ответ получен от GigaChat.")
         return response.content
 
     except Exception as e:
