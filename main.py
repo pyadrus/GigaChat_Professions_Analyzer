@@ -50,9 +50,14 @@ def main():
     """
     logger.info("Запуск программы")
     try:
-        print("1 - Заполнение данных в md файл\n"
-              "2 - Заполнение данных в Excel (Оборудование)\n"
-              "3 - Заполнение данных в Excel (Сырье)")
+        print(
+            "1 - Заполнение данных в md файл\n"
+            "2 - Заполнение данных в Excel (Оборудование)\n"
+            "3 - Заполнение данных в Excel (Сырье)\n"
+            "4 - Заполнение данных в Excel (Сведения об источнике вредного фактора (для перечня РМ))\n"
+            "5 - Заполнение данных в Excel (Краткое описание работы (протокол тяжести))\n"
+            "6 - Заполнение данных в Excel (Краткое описание работы (протокол напряженности))\n"
+        )
         user_input = input("Введите номер:")
         if user_input == '1':  # Заполнение данных в md файл
             filling_data_md_file()
@@ -97,12 +102,72 @@ def main():
                     ws.cell(row=row_idx, column=4, value=response)
                     # Сохраняем изменения в файле
                     wb.save('data.xlsx')
+
+        elif user_input == '4':  # Заполнение данных в Excel
+            wb = op.load_workbook('data.xlsx')
+            ws = wb.active
+            for row_idx, row in enumerate(ws.iter_rows(min_row=5, max_row=116, min_col=1, max_col=1), start=5):
+                plot = [cell.value for cell in row]
+
+                if plot[0] is None:
+                    continue
+                else:
+                    # Формируем запрос к GigaChat
+                    system_prompt = f"Я заполняю данные для аттестации рабочих мест, и мне нужны сведения об источнике вредного фактора (для перечня РМ), которое касается данной профессии. Ответ нужен краткий, на 10 слов максимум: "
+                    f"Профессия: {plot}"
+                    response = get_gigachat_response(GIGA_CHAT, system_prompt)
+                    print(f"Профессия: {plot}. Ответ: {response}")
+                    # Записываем ответ в 3-ю колонку
+                    ws.cell(row=row_idx, column=3, value=response)
+                    # Сохраняем изменения в файле
+                    wb.save('data.xlsx')
+
+
+        elif user_input == '5':  # Заполнение данных в Excel
+            wb = op.load_workbook('data.xlsx')
+            ws = wb.active
+            for row_idx, row in enumerate(ws.iter_rows(min_row=5, max_row=116, min_col=1, max_col=1), start=5):
+                plot = [cell.value for cell in row]
+
+                if plot[0] is None:
+                    continue
+                else:
+                    # Формируем запрос к GigaChat
+                    system_prompt = f"Я заполняю данные для аттестации рабочих мест, и мне нужны краткое описание работы (протокол тяжести), которое касается данной профессии. Ответ нужен краткий, на 10 слов максимум: "
+                    f"Профессия: {plot}"
+                    response = get_gigachat_response(GIGA_CHAT, system_prompt)
+                    print(f"Профессия: {plot}. Ответ: {response}")
+                    # Записываем ответ в 3-ю колонку
+                    ws.cell(row=row_idx, column=4, value=response)
+                    # Сохраняем изменения в файле
+                    wb.save('data.xlsx')
+
+
+        elif user_input == '6':  # Заполнение данных в Excel
+            wb = op.load_workbook('data.xlsx')
+            ws = wb.active
+            for row_idx, row in enumerate(ws.iter_rows(min_row=5, max_row=116, min_col=1, max_col=1), start=5):
+                plot = [cell.value for cell in row]
+
+                if plot[0] is None:
+                    continue
+                else:
+                    # Формируем запрос к GigaChat
+                    system_prompt = f"Я заполняю данные для аттестации рабочих мест, и мне нужны краткое описание работы (протокол напряженности), которое касается данной профессии. Ответ нужен краткий, на 10 слов максимум: "
+                    f"Профессия: {plot}"
+                    response = get_gigachat_response(GIGA_CHAT, system_prompt)
+                    print(f"Профессия: {plot}. Ответ: {response}")
+                    # Записываем ответ в 3-ю колонку
+                    ws.cell(row=row_idx, column=5, value=response)
+                    # Сохраняем изменения в файле
+                    wb.save('data.xlsx')
+
+
         else:
             print("Неверный ввод")
 
     except Exception as e:
         logger.exception(f"Ошибка в программе: {e}")
-
 
 if __name__ == "__main__":
     main()
