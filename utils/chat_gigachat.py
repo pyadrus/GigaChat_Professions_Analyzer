@@ -16,7 +16,7 @@ def get_gigachat_response(token, prompt):
         llm = GigaChat(
             credentials=token,
             scope="GIGACHAT_API_PERS",
-            model="GigaChat-Max",
+            model="GigaChat",
             verify_ssl_certs=False,
             streaming=False,
         )
